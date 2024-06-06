@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"net"
+	"sync"
 	"testing"
 )
 
@@ -44,26 +45,28 @@ var testData = []TestData{
 
 func TestPrimeTimeBatch(t *testing.T) {
 	for idx, data := range testData {
-		runPrimeTimeTest(t, data, idx+1)
+		var wg sync.WaitGroup
+		server, client := net.Pipe()
+
+		wg.Add(1)
+		go func(conn net.Conn, connId int) {
+			defer wg.Done()
+			handleRequest(server, connId)
+		}(server, idx+1)
+
+		client.Write(data.input)
+		buffer := make([]byte, 1024)
+		nBytes, err := client.Read(buffer)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resBytes := buffer[:nBytes]
+		if !bytes.Equal(resBytes, data.output) {
+			t.Fatalf("Invalid response: response %s != expected %s", resBytes, data.output)
+		}
+
+		client.Close()
+		wg.Wait()
 	}
-}
-
-func runPrimeTimeTest(t *testing.T, data TestData, id int) {
-	server, client := net.Pipe()
-
-	go handleRequest(server, id)
-
-	client.Write(data.input)
-	buffer := make([]byte, 1024)
-	nBytes, err := client.Read(buffer)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	resBytes := buffer[:nBytes]
-	if !bytes.Equal(resBytes, data.output) {
-		t.Fatalf("Invalid response: response %s != expected %s", resBytes, data.output)
-	}
-
-	client.Close()
 }
