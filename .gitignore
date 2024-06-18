@@ -2,3 +2,4 @@ bin/
 build.sh
 test.sh
 *.log
+*/testdata/
