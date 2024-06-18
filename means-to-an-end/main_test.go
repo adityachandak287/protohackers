@@ -127,4 +127,6 @@ func TestReadMessages(t *testing.T) {
 			t.Fatalf("Message mismatch! Expected [%T %v] != Output [%T %v]", msg, msg, d.message, d.message)
 		}
 	}
+
+	client.Close()
 }
