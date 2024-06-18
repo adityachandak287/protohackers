@@ -116,9 +116,8 @@ func readMessages(conn net.Conn, id int, ch chan interface{}) {
 
 		log.Printf("[%d] Read %d bytes: [%v]", id, len(buffer), buffer)
 
-		messageType := buffer[0]
 		var msg interface{}
-		switch messageType {
+		switch messageType := buffer[0]; messageType {
 		case InsertType:
 			msg = InsertMessage{
 				Type:      InsertType,
@@ -128,8 +127,8 @@ func readMessages(conn net.Conn, id int, ch chan interface{}) {
 		case QueryType:
 			msg = QueryMessage{
 				Type:    QueryType,
-				MinTime: Int32FromBytes(Int32Bytes(buffer[1:5])),
-				MaxTime: Int32FromBytes(Int32Bytes(buffer[5:9])),
+				MinTime: Int32FromBytes(Int32Bytes(buffer[1 : 1+Int32Len])),
+				MaxTime: Int32FromBytes(Int32Bytes(buffer[1+Int32Len : MessageLen])),
 			}
 		default:
 			log.Printf("[%d] Invalid message type: [%c]", id, messageType)
@@ -160,7 +159,7 @@ func Int32FromBytes(buf Int32Bytes) int32 {
 }
 
 func BytesFromInt32(value int32) Int32Bytes {
-	buf := make([]byte, 4)
+	buf := make([]byte, Int32Len)
 	binary.BigEndian.PutUint32(buf, uint32(value))
 	return Int32Bytes(buf)
 }
